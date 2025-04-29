@@ -13,7 +13,6 @@ from workflow.team_builder import build_team
 from database_utils.execution import ExecutionStatus
 from workflow.system_state import SystemState
 import fcntl
-from src.runner.information_retriever import load_vector_db, retrieve_similar_items
 
 class RunManager:
     RESULT_ROOT_PATH = "results"
@@ -25,6 +24,12 @@ class RunManager:
         self.tasks: List[Task] = []
         self.total_number_of_tasks = 0
         self.processed_tasks = 0
+
+        # --- load your schema & column embeddings once ---
+        from src.runner.information_retriever import load_vector_db
+        tables_path  = "vector_db/tables_vector_db.csv"
+        columns_path = "vector_db/columns_vector_db.csv"
+        self.tables_df, self.columns_df = load_vector_db(tables_path, columns_path)
 
     def get_result_directory(self) -> str:
         """
@@ -116,29 +121,38 @@ class RunManager:
         print(f"Initializing task: {task.db_id} {task.question_id}")
         DatabaseManager(db_mode=self.args.data_mode, db_id=task.db_id)
 
-        # === IR Step: Retrieve top relevant schema ===
-        tables_df, columns_df = load_vector_db("vector_db/tables_vector_db.csv", "vector_db/columns_vector_db.csv")
+        # === IR Step: Retrieve top-k relevant tables & columns using your loaded CSVs ===
+        from src.runner.information_retriever import retrieve_similar_items
 
-        retrieved_tables, _ = retrieve_similar_items(task.question, target='tables', tables_df=tables_df)
-        retrieved_columns, _ = retrieve_similar_items(task.question, target='columns', columns_df=columns_df)
+        retrieved_tables, _  = retrieve_similar_items(
+            task.question,
+            target='tables',
+            top_k=self.args.ir_top_k,
+            tables_df=self.tables_df,
+            columns_df=self.columns_df
+        )
+        retrieved_columns, _ = retrieve_similar_items(
+            task.question,
+            target='columns',
+            top_k = getattr(self.args, "ir_top_k", 5),
+            tables_df=self.tables_df,
+            columns_df=self.columns_df
+        )
 
-        task.retrieved_tables = retrieved_tables
+        task.retrieved_tables  = retrieved_tables
         task.retrieved_columns = retrieved_columns
 
-    # === (NEW) Schema Selector step ===
-    from src.runner.schema_selector import select_schema
-    task.selected_schema = select_schema(task)
+        # === SS Step: prune schema using your selector ===
+        from src.runner.schema_selector import select_schema
+        task.selected_schema = select_schema(task)
 
-    # === DEBUG PRINTS ===
-    print("✅ Retrieved Tables:")
-    print(task.retrieved_tables)
-
-    print("✅ Retrieved Columns:")
-    print(task.retrieved_columns)
-
-    print("✅ Selected Schema:")
-    print(task.selected_schema)
-    
+        # --- debug to confirm ---
+        print("✅ Retrieved Tables (top):")
+        print(task.retrieved_tables.head())
+        print("✅ Retrieved Columns (top):")
+        print(task.retrieved_columns.head())
+        print("✅ Selected Schema:")
+        print(task.selected_schema)
 
         logger = Logger(db_id=task.db_id, question_id=task.question_id, result_directory=self.result_directory)
         logger._set_log_level(self.args.log_level)

@@ -33,4 +33,5 @@ def retrieve_similar_items(query: str, top_k=5, target='tables', tables_df=None,
     top_indices = scores.argsort()[::-1][:top_k]
     results = data.iloc[top_indices]
 
-    return results[['id', 'text']], scores[top_indices]
+    # return the complete metadata for each hit (all columns in your CSV)
+    return results, scores[top_indices]
