@@ -145,14 +145,14 @@ class RunManager:
         # === SS Step: prune schema using your selector ===
         from src.runner.schema_selector import select_schema
         task.selected_schema = select_schema(task)
-
-        # --- debug to confirm ---
-        print("✅ Retrieved Tables (top):")
+        
+        print(">>> [DEBUG] IR → tables:")
         print(task.retrieved_tables.head())
-        print("✅ Retrieved Columns (top):")
+        print(">>> [DEBUG] IR → columns:")
         print(task.retrieved_columns.head())
-        print("✅ Selected Schema:")
+        print(">>> [DEBUG] SS → selected_schema:")
         print(task.selected_schema)
+
 
         logger = Logger(db_id=task.db_id, question_id=task.question_id, result_directory=self.result_directory)
         logger._set_log_level(self.args.log_level)
