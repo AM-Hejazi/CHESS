@@ -1,0 +1,9 @@
+TABLE_NAME,DESCRIPTION
+Wamas.ART,Artikelstamm
+Wamas.FES,Feldstamm
+Wamas.P_AUSK,Auslagerauftrag_Kopf_Protokoll
+Wamas.P_AUSP,Protokoll Auslagerauftrag_Position
+Wamas.P_WEVK,PROT_WEVK
+Wamas.P_TPA,Protokoll Transportauftrag
+Wamas.P_TOUR,Tourdatenbank_Protokoll
+Wamas.P_VPLP,Verplanungsposition Protokoll

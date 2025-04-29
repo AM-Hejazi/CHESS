@@ -13,6 +13,7 @@ from workflow.team_builder import build_team
 from database_utils.execution import ExecutionStatus
 from workflow.system_state import SystemState
 import fcntl
+from src.runner.information_retriever import load_vector_db, retrieve_similar_items
 
 class RunManager:
     RESULT_ROOT_PATH = "results"
@@ -113,6 +114,17 @@ class RunManager:
         """
         print(f"Initializing task: {task.db_id} {task.question_id}")
         DatabaseManager(db_mode=self.args.data_mode, db_id=task.db_id)
+
+        # === IR Step: Retrieve top relevant schema ===
+        tables_df, columns_df = load_vector_db("vector_db/tables_vector_db.csv", "vector_db/columns_vector_db.csv")
+
+        retrieved_tables, _ = retrieve_similar_items(task.question, target='tables', tables_df=tables_df)
+        retrieved_columns, _ = retrieve_similar_items(task.question, target='columns', columns_df=columns_df)
+
+        task.retrieved_tables = retrieved_tables
+        task.retrieved_columns = retrieved_columns
+
+
         logger = Logger(db_id=task.db_id, question_id=task.question_id, result_directory=self.result_directory)
         logger._set_log_level(self.args.log_level)
         logger.log(f"Processing task: {task.db_id} {task.question_id}", "info")
