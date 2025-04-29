@@ -112,6 +112,7 @@ class RunManager:
         Returns:
             tuple: The state of the task processing and task identifiers.
         """
+
         print(f"Initializing task: {task.db_id} {task.question_id}")
         DatabaseManager(db_mode=self.args.data_mode, db_id=task.db_id)
 
@@ -124,6 +125,20 @@ class RunManager:
         task.retrieved_tables = retrieved_tables
         task.retrieved_columns = retrieved_columns
 
+    # === (NEW) Schema Selector step ===
+    from src.runner.schema_selector import select_schema
+    task.selected_schema = select_schema(task)
+
+    # === DEBUG PRINTS ===
+    print("✅ Retrieved Tables:")
+    print(task.retrieved_tables)
+
+    print("✅ Retrieved Columns:")
+    print(task.retrieved_columns)
+
+    print("✅ Selected Schema:")
+    print(task.selected_schema)
+    
 
         logger = Logger(db_id=task.db_id, question_id=task.question_id, result_directory=self.result_directory)
         logger._set_log_level(self.args.log_level)
@@ -140,7 +155,9 @@ class RunManager:
             logger.log("________________________________________________________________________________________")
             continue
         system_state = SystemState(**state_dict)
+        
         return system_state, task.db_id, task.question_id
+
 
     def pick_final_sql(self, state: SystemState):
         """
