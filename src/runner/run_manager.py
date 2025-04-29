@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from multiprocessing import Pool
 from typing import List, Dict, Any, Tuple
-from langgraph.graph import StateGraph
+#from langgraph.graph import StateGraph
 
 from runner.logger import Logger
 from runner.task import Task
@@ -145,7 +145,7 @@ class RunManager:
         # === SS Step: prune schema using your selector ===
         from src.runner.schema_selector import select_schema
         task.selected_schema = select_schema(task)
-        
+
         print(">>> [DEBUG] IR → tables:")
         print(task.retrieved_tables.head())
         print(">>> [DEBUG] IR → columns:")
