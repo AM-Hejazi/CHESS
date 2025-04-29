@@ -1,5 +1,5 @@
 from typing import Optional, Any, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import pandas as pd
 
 class Task(BaseModel):
@@ -28,3 +28,6 @@ class Task(BaseModel):
     retrieved_tables: Optional[pd.DataFrame] = None
     retrieved_columns: Optional[pd.DataFrame] = None
     selected_schema: Optional[Dict[str, Any]] = None
+    
+    # this line makes Pydantic stop complaining about DataFrames
+    model_config = ConfigDict(arbitrary_types_allowed=True)
