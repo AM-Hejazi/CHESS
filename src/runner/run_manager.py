@@ -5,10 +5,11 @@ from multiprocessing import Pool
 from typing import List, Dict, Any, Tuple
 #from langgraph.graph import StateGraph
 
-from runner.logger import Logger
-from runner.task import Task
-from runner.database_manager import DatabaseManager
-from runner.statistics_manager import StatisticsManager
+from src.runner.logger import Logger
+from src.runner.task import Task
+from src.runner.database_manager import DatabaseManager
+from src.runner.statistics_manager import StatisticsManager
+
 from workflow.team_builder import build_team
 from database_utils.execution import ExecutionStatus
 from workflow.system_state import SystemState
