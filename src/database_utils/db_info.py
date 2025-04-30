@@ -3,7 +3,7 @@ import logging
 import os
 from typing import List, Dict
 # query via our DatabaseManager
-from runner.database_manager import DatabaseManager
+from ..runner.database_manager import DatabaseManager
 
 # Read mode & db_id from env
 DB_MODE = os.getenv("DATA_MODE", "dev")
