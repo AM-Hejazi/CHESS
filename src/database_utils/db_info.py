@@ -44,7 +44,7 @@ def get_table_all_columns(db_path: str = None, table_name: str = None) -> List[s
 
 def get_db_schema(db_path: str = None) -> Dict[str, List[str]]:
     """
-    Retrieves the schema of the database via DatabaseManager.
+#    Retrieves the schema of the database via DatabaseManager.
     """
     try:
         tables = get_db_all_tables()
