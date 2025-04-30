@@ -1,50 +1,31 @@
-import logging
 import os
-from typing import List, Dict
+import chromadb
+from dotenv import load_dotenv
 
-DB_MODE = os.getenv("DATA_MODE", "dev")
-DB_ID   = os.getenv("DB_NAME")
+# Load environment variables (including DEEPSEEK_API_KEY)
+load_dotenv(override=True)
 
-def get_db_all_tables(db_path: str = None) -> List[str]:
-    """Retrieves all table names from the SQL Server database."""
-    from runner.database_manager import DatabaseManager
-    try:
-        dm = DatabaseManager(DB_MODE, DB_ID)
-        rows = dm.fetch_all(
-            "SELECT TABLE_NAME "
-            "FROM INFORMATION_SCHEMA.TABLES "
-            "WHERE TABLE_TYPE = 'BASE TABLE';"
-        )
-        return [r[0] for r in rows]
-    except Exception as e:
-        logging.error(f"Error in get_db_all_tables: {e}")
-        raise
+# Initialize DeepSeek client
+from deepseek import DeepSeekClient
 
+deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+if not deepseek_api_key:
+    raise ValueError("DEEPSEEK_API_KEY not found in environment")
 
-def get_table_all_columns(db_path: str = None, table_name: str = None) -> List[str]:
-    """Retrieves all column names for a given table."""
-    from runner.database_manager import DatabaseManager
-    try:
-        dm = DatabaseManager(DB_MODE, DB_ID)
-        rows = dm.fetch_all(
-            "SELECT COLUMN_NAME "
-            "FROM INFORMATION_SCHEMA.COLUMNS "
-            "WHERE TABLE_NAME = ?;",
-            (table_name,)
-        )
-        return [r[0] for r in rows]
-    except Exception as e:
-        logging.error(f"Error in get_table_all_columns for {table_name}: {e}")
-        raise
+deepseek_client = DeepSeekClient(api_key=deepseek_api_key)
 
+# Define a LangChain–compatible embeddings wrapper using DeepSeek
+from langchain.embeddings.base import Embeddings
 
-def get_db_schema(db_path: str = None) -> Dict[str, List[str]]:
-    """Retrieves the full schema (tables→columns)."""
-    try:
-        schema = {}
-        for tbl in get_db_all_tables():
-            schema[tbl] = get_table_all_columns(table_name=tbl)
-        return schema
-    except Exception as e:
-        logging.error(f"Error in get_db_schema: {e}")
-        raise
+class DeepSeekEmbeddings(Embeddings):
+    def __init__(self, client: DeepSeekClient):
+        self.client = client
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return self.client.embed_documents(texts)
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.client.embed_query(text)
+
+# Use DeepSeekEmbeddings instead of OpenAIEmbeddings
+EMBEDDING_FUNCTION = DeepSeekEmbeddings(deepseek_client)
