@@ -10,7 +10,7 @@ def load_api_key():
     return key
 
 # Initialize DeepSeek client
-from deepseek import DeepSeekClient
+from deepseek_sdk import DeepSeekClient
 from langchain.embeddings.base import Embeddings
 
 # Fetch and validate API key
