@@ -34,4 +34,4 @@ class DeepSeekEmbeddings(Embeddings):
         return self.client.embed_query(text)
 
 # Export the embedding function for CHESS
-iat EMBEDDING_FUNCTION = DeepSeekEmbeddings(deepseek_client)
+EMBEDDING_FUNCTION = DeepSeekEmbeddings(deepseek_client)
