@@ -10,13 +10,19 @@ def load_api_key():
     return key
 
 # Initialize DeepSeek client
-from deepseek_sdk import DeepSeekClient
+# Try both possible module names
+try:
+    from deepseek_sdk import DeepSeekClient
+except ImportError:
+    try:
+        from deepseek import DeepSeekClient
+    except ImportError:
+        raise ImportError("Could not import DeepSeekClient from deepseek_sdk or deepseek; ensure deepseek-sdk is installed")
+
 from langchain.embeddings.base import Embeddings
 
 # Fetch and validate API key
-from dotenv import load_dotenv
 api_key = load_api_key()
-
 deepseek_client = DeepSeekClient(api_key=api_key)
 
 # Define LangChain-compatible embeddings wrapper using DeepSeek
