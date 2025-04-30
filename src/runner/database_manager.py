@@ -326,24 +326,6 @@ class DatabaseManager:
             method = cls.with_db_path(func)
             setattr(cls, func.__name__, method)
 
-# List of functions to be added to the class
-functions_to_add = [
-    subprocess_sql_executor,
-    execute_sql, 
-    compare_sqls,
-    validate_sql_query,
-    aggregate_sqls,
-    get_db_all_tables,
-    get_table_all_columns,
-    get_db_schema,
-    get_sql_tables,
-    get_sql_columns_dict,
-    get_sql_condition_literals,
-    get_execution_status
-]
-
-# Adding methods to the class
-DatabaseManager.add_methods_to_class(functions_to_add)
 
 # Auxiliary function for interacting with the index server
 def receive_data_in_chunks(conn, chunk_size=1024):

@@ -18,6 +18,7 @@ from workflow.team_builder import build_team
 from database_utils.execution import ExecutionStatus
 from workflow.system_state import SystemState
 import fcntl
+import runner.db_wiring
 
 class RunManager:
     RESULT_ROOT_PATH = "results"
