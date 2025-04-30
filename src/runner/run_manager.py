@@ -1,3 +1,8 @@
+#git status
+#git add .
+#git commit -m "Describe what you just changed"
+#git push origin $(git rev-parse --abbrev-ref HEAD)
+
 import os
 import json
 from pathlib import Path

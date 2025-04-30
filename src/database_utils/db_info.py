@@ -1,56 +1,57 @@
 import logging
+import os
 from typing import List, Dict
 
-from database_utils.execution import execute_sql
+from database_manager import DatabaseManager
 
-def get_db_all_tables(db_path: str) -> List[str]:
+# Read mode & db_id from env
+DB_MODE = os.getenv("DATA_MODE", "dev")
+DB_ID   = os.getenv("DB_NAME")  # use your DB_NAME as the identifier
+
+def get_db_all_tables(db_path: str = None) -> List[str]:
     """
-    Retrieves all table names from the database.
-    
-    Args:
-        db_path (str): The path to the database file.
-        
-    Returns:
-        List[str]: A list of table names.
+    Retrieves all table names from the SQL Server database.
     """
     try:
-        raw_table_names = execute_sql(db_path, "SELECT name FROM sqlite_master WHERE type='table';")
-        return [table[0].replace('\"', '').replace('`', '') for table in raw_table_names if table[0] != "sqlite_sequence"]
+        dm = DatabaseManager(DB_MODE, DB_ID)
+        rows = dm.fetch_all(
+            "SELECT TABLE_NAME "
+            "FROM INFORMATION_SCHEMA.TABLES "
+            "WHERE TABLE_TYPE = 'BASE TABLE';"
+        )
+        return [r[0] for r in rows]
     except Exception as e:
         logging.error(f"Error in get_db_all_tables: {e}")
-        raise e
+        raise
 
-def get_table_all_columns(db_path: str, table_name: str) -> List[str]:
+def get_table_all_columns(db_path: str = None, table_name: str = None) -> List[str]:
     """
     Retrieves all column names for a given table.
-    
-    Args:
-        db_path (str): The path to the database file.
-        table_name (str): The name of the table.
-        
-    Returns:
-        List[str]: A list of column names.
     """
     try:
-        table_info_rows = execute_sql(db_path, f"PRAGMA table_info(`{table_name}`);")
-        return [row[1].replace('\"', '').replace('`', '') for row in table_info_rows]
+        dm = DatabaseManager(DB_MODE, DB_ID)
+        rows = dm.fetch_all(
+            "SELECT COLUMN_NAME "
+            "FROM INFORMATION_SCHEMA.COLUMNS "
+            "WHERE TABLE_NAME = ?;",
+            (table_name,)
+        )
+        return [r[0] for r in rows]
     except Exception as e:
-        logging.error(f"Error in get_table_all_columns: {e}\nTable: {table_name}")
-        raise e
+        logging.error(f"Error in get_table_all_columns for {table_name}: {e}")
+        raise
 
-def get_db_schema(db_path: str) -> Dict[str, List[str]]:
+def get_db_schema(db_path: str = None) -> Dict[str, List[str]]:
     """
     Retrieves the schema of the database.
-    
-    Args:
-        db_path (str): The path to the database file.
-        
-    Returns:
-        Dict[str, List[str]]: A dictionary mapping table names to lists of column names.
     """
     try:
-        table_names = get_db_all_tables(db_path)
-        return {table_name: get_table_all_columns(db_path, table_name) for table_name in table_names}
+        tables = get_db_all_tables()
+        schema = {}
+        for tbl in tables:
+            cols = get_table_all_columns(table_name=tbl)
+            schema[tbl] = cols
+        return schema
     except Exception as e:
         logging.error(f"Error in get_db_schema: {e}")
-        raise e
+        raise

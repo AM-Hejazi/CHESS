@@ -1,9 +1,10 @@
 import os
 import socket
-import pickle
+import pickle 
 from threading import Lock
 from pathlib import Path
 from dotenv import load_dotenv
+import pyodbc
 from langchain_chroma import Chroma
 from typing import Callable, Dict, List, Any
 import time
@@ -19,7 +20,12 @@ from database_utils.db_catalog.preprocess import EMBEDDING_FUNCTION
 from database_utils.db_catalog.csv_utils import load_tables_description
 
 load_dotenv(override=True)
-DB_ROOT_PATH = Path(os.getenv("DB_ROOT_PATH"))
+# ─────────── SQL-Server ODBC Settings ───────────
+DB_DRIVER             = os.getenv("DB_DRIVER")
+DB_SERVER             = os.getenv("DB_SERVER")
+DB_NAME               = os.getenv("DB_NAME")
+DB_TRUSTED_CONNECTION = os.getenv("DB_TRUSTED_CONNECTION", "yes")
+#DB_ROOT_PATH = Path(os.getenv("DB_ROOT_PATH"))
 
 INDEX_SERVER_HOST = os.getenv("INDEX_SERVER_HOST")
 INDEX_SERVER_PORT = int(os.getenv("INDEX_SERVER_PORT"))
@@ -54,17 +60,47 @@ class DatabaseManager:
             db_mode (str): The mode of the database (e.g., 'train', 'test').
             db_id (str): The database identifier.
         """
-        self.db_mode = db_mode
-        self.db_id = db_id
-        self._set_paths()
-        self.lsh = None
-        self.minhashes = None
-        self.vector_db = None
+         self.db_mode = db_mode
+         self.db_id   = db_id
+
+         # ─────────── Open SQL-Server connection ───────────
+         odbc_str = (
+             f"DRIVER={DB_DRIVER};"
+             f"SERVER={DB_SERVER};"
+             f"DATABASE={DB_NAME};"
+             f"Trusted_Connection={DB_TRUSTED_CONNECTION};"
+         )
+         self.sql_conn   = pyodbc.connect(odbc_str)
+         self.sql_cursor = self.sql_conn.cursor()
+ 
+         self._set_paths()
+         self.lsh        = None
+         self.minhashes  = None
 
     def _set_paths(self):
         """Sets the paths for the database files and directories."""
-        self.db_path = DB_ROOT_PATH / f"{self.db_mode}_databases" / self.db_id / f"{self.db_id}.sqlite"
-        self.db_directory_path = DB_ROOT_PATH / f"{self.db_mode}_databases" / self.db_id
+        #self.db_path = DB_ROOT_PATH / f"{self.db_mode}_databases" / self.db_id / f"{self.db_id}.sqlite"
+        #self.db_directory_path = DB_ROOT_PATH / f"{self.db_mode}_databases" / self.db_id
+    def execute_query(self, sql: str, params: tuple = None) -> None:
+        """
+        Execute a modifying SQL statement (INSERT/UPDATE/DELETE).
+        """
+        if params:
+            self.sql_cursor.execute(sql, params)
+        else:
+            self.sql_cursor.execute(sql)
+        self.sql_conn.commit()
+
+    def fetch_all(self, sql: str, params: tuple = None) -> List[tuple]:
+        """
+        Execute a SELECT and return all rows.
+        """
+        if params:
+            result = self.sql_cursor.execute(sql, params)
+        else:
+            result = self.sql_cursor.execute(sql)
+        return result.fetchall()
+
 
     def set_lsh(self) -> str:
         """Sets the LSH and minhashes attributes by loading from pickle files."""
