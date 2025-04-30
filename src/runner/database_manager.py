@@ -60,22 +60,22 @@ class DatabaseManager:
             db_mode (str): The mode of the database (e.g., 'train', 'test').
             db_id (str): The database identifier.
         """
-         self.db_mode = db_mode
-         self.db_id   = db_id
+        self.db_mode = db_mode
+        self.db_id   = db_id
 
-         # ─────────── Open SQL-Server connection ───────────
-         odbc_str = (
-             f"DRIVER={DB_DRIVER};"
-             f"SERVER={DB_SERVER};"
-             f"DATABASE={DB_NAME};"
-             f"Trusted_Connection={DB_TRUSTED_CONNECTION};"
-         )
-         self.sql_conn   = pyodbc.connect(odbc_str)
-         self.sql_cursor = self.sql_conn.cursor()
+        # ─────────── Open SQL-Server connection ───────────
+        odbc_str = (
+            f"DRIVER={DB_DRIVER};"
+            f"SERVER={DB_SERVER};"
+            f"DATABASE={DB_NAME};"
+            f"Trusted_Connection={DB_TRUSTED_CONNECTION};"
+        )
+        self.sql_conn   = pyodbc.connect(odbc_str)
+        self.sql_cursor = self.sql_conn.cursor()
  
-         self._set_paths()
-         self.lsh        = None
-         self.minhashes  = None
+        self._set_paths()
+        self.lsh        = None
+        self.minhashes  = None
 
     def _set_paths(self):
         """Sets the paths for the database files and directories."""
