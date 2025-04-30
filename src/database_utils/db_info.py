@@ -1,8 +1,9 @@
 import logging
 import os
 from typing import List, Dict
+from database_utils.execution import execute_sql
 
-from runner.database_manager import DatabaseManager
+#from runner.database_manager import DatabaseManager
 
 # Read mode & db_id from env
 DB_MODE = os.getenv("DATA_MODE", "dev")
