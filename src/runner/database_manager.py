@@ -40,10 +40,11 @@ class DatabaseManager:
     _instance: "DatabaseManager" = None
 
     def __new__(cls, db_mode: str, db_id: str):
-        # Singleton: on first call, build & init; thereafter, return existing
+        # Singleton: on first call, construct + run __init__; thereafter, return the same
         if cls._instance is None:
             inst = super().__new__(cls)
-            inst._init(db_mode, db_id)       # call your _init method
+            # manually invoke __init__ to set up the connection
+            inst.__init__(db_mode, db_id)
             cls._instance = inst
         return cls._instance
 
