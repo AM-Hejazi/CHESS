@@ -24,7 +24,9 @@ load_dotenv(override=True)
 DB_DRIVER             = os.getenv("DB_DRIVER")
 DB_SERVER             = os.getenv("DB_SERVER")
 DB_NAME               = os.getenv("DB_NAME")
-DB_TRUSTED_CONNECTION = os.getenv("DB_TRUSTED_CONNECTION", "yes")
+DB_USER               = os.getenv("DB_USER")
+DB_PASSWORD           = os.getenv("DB_PASSWORD")
+DB_TRUSTED_CONNECTION = os.getenv("DB_TRUSTED_CONNECTION", "no").lower()
 #DB_ROOT_PATH = Path(os.getenv("DB_ROOT_PATH"))
 
 INDEX_SERVER_HOST = os.getenv("INDEX_SERVER_HOST")
@@ -52,7 +54,7 @@ class DatabaseManager:
                 raise ValueError("DatabaseManager instance has not been initialized yet.")
             return cls._instance
 
-    def _init(self, db_mode: str, db_id: str):
+    def __init__(self, db_mode: str, db_id: str):
         """
         Initializes the DatabaseManager instance.
 
@@ -63,16 +65,27 @@ class DatabaseManager:
         self.db_mode = db_mode
         self.db_id   = db_id
 
+        # ─────────── Build ODBC connection string ───────────
+        if DB_TRUSTED_CONNECTION.lower() == "yes":
+            odbc_str = (
+                f"DRIVER={DB_DRIVER};"
+                f"SERVER={DB_SERVER};"
+                f"DATABASE={DB_NAME};"
+                f"Trusted_Connection=yes;"
+            )
+        else:
+            odbc_str = (
+                f"DRIVER={DB_DRIVER};"
+                f"SERVER={DB_SERVER};"
+                f"DATABASE={DB_NAME};"
+                f"UID={DB_USER};"
+                f"PWD={DB_PASSWORD};"
+            )
+
         # ─────────── Open SQL-Server connection ───────────
-        odbc_str = (
-            f"DRIVER={DB_DRIVER};"
-            f"SERVER={DB_SERVER};"
-            f"DATABASE={DB_NAME};"
-            f"Trusted_Connection={DB_TRUSTED_CONNECTION};"
-        )
-        self.sql_conn   = pyodbc.connect(odbc_str)
+        self.sql_conn   = pyodbc.connect(odbc_str, timeout=10)
         self.sql_cursor = self.sql_conn.cursor()
- 
+
         self._set_paths()
         self.lsh        = None
         self.minhashes  = None
