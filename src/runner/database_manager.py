@@ -37,22 +37,15 @@ class DatabaseManager:
     A singleton class to manage database operations including schema generation, 
     querying LSH and vector databases, and managing column profiles.
     """
-    _instance = None
-    _lock = Lock()
+    _instance: "DatabaseManager" = None
 
-    def __new__(cls, db_mode=None, db_id=None):
-        if (db_mode is not None) and (db_id is not None):
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(DatabaseManager, cls).__new__(cls)
-                    cls._instance._init(db_mode, db_id)
-                elif cls._instance.db_id != db_id:
-                    cls._instance._init(db_mode, db_id)
-                return cls._instance
-        else:
-            if cls._instance is None:
-                raise ValueError("DatabaseManager instance has not been initialized yet.")
-            return cls._instance
+    def __new__(cls, db_mode: str, db_id: str):
+        # Singleton: create-and-init on first call, reuse thereafter
+        if cls._instance is None:
+            inst = super().__new__(cls)
+            inst._init(db_mode, db_id)
+            cls._instance = inst
+        return cls._instance
 
     def __init__(self, db_mode: str, db_id: str):
         """
