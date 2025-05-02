@@ -40,10 +40,10 @@ class DatabaseManager:
     _instance: "DatabaseManager" = None
 
     def __new__(cls, db_mode: str, db_id: str):
-        # Singleton: create-and-init on first call, reuse thereafter
+        # Singleton: on first call, build & init; thereafter, return existing
         if cls._instance is None:
             inst = super().__new__(cls)
-            inst._init(db_mode, db_id)
+            inst._init(db_mode, db_id)       # call your _init method
             cls._instance = inst
         return cls._instance
 
