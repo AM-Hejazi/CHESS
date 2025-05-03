@@ -2,11 +2,12 @@ import re
 import logging
 import random
 from typing import Dict, List, Optional
+import sys
+from pathlib import Path
 
 from database_utils.execution import execute_sql
-#from database_utils.db_info import get_db_schema
+from database_utils.db_info import get_db_schema
 from database_utils.schema import DatabaseSchema, get_primary_keys
-
 class DatabaseSchemaGenerator:
     """
     Generates database schema with optional examples and descriptions.
@@ -89,7 +90,6 @@ class DatabaseSchemaGenerator:
             db_id (str): The database identifier.
             db_path (str): The path to the database file.
         """
-        db_schema = DatabaseSchema.from_schema_dict(get_db_schema(db_path))
         # defer import to break circular dependency
         from database_utils.db_info import get_db_schema
         db_schema = DatabaseSchema.from_schema_dict(get_db_schema(db_path))

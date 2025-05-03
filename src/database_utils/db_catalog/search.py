@@ -1,46 +1,63 @@
+import os
 import logging
-from typing import Dict
-from langchain_chroma import Chroma
+import numpy as np
+from typing import List, Dict
 
-def query_vector_db(vector_db: Chroma, query: str, top_k: int) -> Dict[str, Dict[str, dict]]:
+from database_utils.db_catalog.preprocess import EMBEDDING_FUNCTION
+
+def _load_vectors(csv_name: str):
     """
-    Queries the vector database for the most relevant documents based on the query.
-
-    Args:
-        vector_db (Chroma): The vector database to query.
-        query (str): The query string to search for.
-        top_k (int): The number of top results to return.
-
-    Returns:
-        Dict[str, Dict[str, dict]]: A dictionary containing table descriptions with their column details and scores.
+    Helper to load a vector CSV only if it exists.
+    Returns a tuple (ids, vectors) or ([], []) if missing.
     """
-    table_description = {}
-    
     try:
-        relevant_docs_score = vector_db.similarity_search_with_score(query, k=top_k)
-        logging.info(f"Query executed successfully: {query}")
-    except Exception as e:
-        logging.error(f"Error executing query: {query}, Error: {e}")
-        raise e
-    
-    for doc, score in relevant_docs_score:
-        metadata = doc.metadata
-        table_name = metadata["table_name"]
-        original_column_name = metadata["original_column_name"].strip()
-        column_name = metadata["column_name"].strip()
-        column_description = metadata["column_description"].strip()
-        value_description = metadata["value_description"].strip()
-        
-        if table_name not in table_description:
-            table_description[table_name] = {}
-        
-        if original_column_name not in table_description[table_name]:
-            table_description[table_name][original_column_name] = {
-                "column_name": column_name,
-                "column_description": column_description,
-                "value_description": value_description,
-                "score": score
-            }
-    
-    logging.info(f"Query results processed for query: {query}")
-    return table_description
+        import pandas as pd
+    except ImportError:
+        logging.warning("pandas not installed—vector search disabled.")
+        return [], []
+
+    base = os.getenv("DB_ROOT_DIRECTORY", "./data/dev/dev_databases")
+    vdb  = os.path.join(base, os.getenv("DB_NAME"), "vector_db")
+    path = os.path.join(vdb, csv_name)
+    if not os.path.exists(path):
+        logging.warning(f"{csv_name} not found at {path}—vector search disabled.")
+        return [], []
+
+    df = pd.read_csv(path)
+    ids = df.iloc[:, 0].tolist()  # adjust if your id column differs
+    # assume the last column is the vector string "[x, y, z]"
+    raw = df.iloc[:, -1].tolist()
+    vectors = []
+    for s in raw:
+        arr = np.fromstring(s.strip("[]"), sep=",")
+        vectors.append(arr)
+    return ids, vectors
+
+def query_vector_db(question: str, k: int = 10) -> List[Dict]:
+    """
+    Compute query embedding and rank the precomputed table vectors.
+    """
+    table_ids, table_vecs = _load_vectors("tables_vector_db.csv")
+    if not table_vecs:
+        return []
+
+    qv = np.array(EMBEDDING_FUNCTION.embed_query(question), dtype=float)
+    # cosine similarity
+    sims = [float(np.dot(v, qv) / (np.linalg.norm(v)*np.linalg.norm(qv) + 1e-10))
+            for v in table_vecs]
+    # get top k
+    idxs = sorted(range(len(sims)), key=lambda i: sims[i], reverse=True)[:k]
+
+    results = []
+    # reload pandas to get full metadata
+    import pandas as pd
+    df = pd.read_csv(os.path.join(os.getenv("DB_ROOT_DIRECTORY"),
+                                  os.getenv("DB_NAME"),
+                                  "vector_db",
+                                  "tables_vector_db.csv"))
+    for i in idxs:
+        row = df.iloc[i].to_dict()
+        # remove the raw vector column if you like
+        row.pop("vector", None)
+        results.append(row)
+    return results

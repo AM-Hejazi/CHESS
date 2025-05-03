@@ -5,7 +5,6 @@ from threading import Lock
 from pathlib import Path
 from dotenv import load_dotenv
 import pyodbc
-from langchain_chroma import Chroma
 from typing import Callable, Dict, List, Any
 import time
 
